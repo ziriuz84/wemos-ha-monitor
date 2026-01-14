@@ -1,15 +1,15 @@
 /**
  * Wemos D1 R2 - Home Assistant Monitor
  * 
- * Sketch per monitorare sensori Home Assistant tramite REST API.
- * Legge i valori dei sensori configurati e li stampa sulla seriale.
+ * Sketch to monitor Home Assistant sensors via REST API.
+ * Reads configured sensor values and prints them to serial.
  * 
- * Requisiti:
- * - ESP8266WiFi (inclusa con ESP8266 Board Support)
- * - ESP8266HTTPClient (inclusa con ESP8266 Board Support)
+ * Requirements:
+ * - ESP8266WiFi (included with ESP8266 Board Support)
+ * - ESP8266HTTPClient (included with ESP8266 Board Support)
  * - ArduinoJson v6.x
  * 
- * Configurazione: modificare config.h con le proprie credenziali
+ * Configuration: edit config.h with your credentials
  */
 
 #include <ESP8266WiFi.h>
@@ -18,33 +18,33 @@
 #include <ArduinoJson.h>
 #include "config.h"
 
-// Oggetti globali per connessione WiFi e HTTP
-WiFiClient client;           // Client TCP per connessioni HTTP
-WiFiClientSecure clientSecure;  // Client TCP per connessioni HTTPS
-HTTPClient http;             // Client HTTP per richieste REST API
+// Global objects for WiFi and HTTP connection
+WiFiClient client;           // TCP client for HTTP connections
+WiFiClientSecure clientSecure;  // TCP client for HTTPS connections
+HTTPClient http;             // HTTP client for REST API requests
 
-// Flag per determinare se usare HTTPS
+// Flag to determine if HTTPS should be used
 bool useHTTPS = false;
 
 /**
- * Inizializzazione hardware e connessione WiFi
- * Eseguita una sola volta all'avvio del dispositivo
+ * Hardware initialization and WiFi connection
+ * Executed once at device startup
  */
 void setup() {
-  // Inizializzazione seriale per debug (115200 baud)
+  // Serial initialization for debugging (115200 baud)
   Serial.begin(115200);
-  delay(1000);  // Attesa stabilizzazione seriale
+  delay(1000);  // Wait for serial stabilization
   
   Serial.println("\n=== Wemos D1 R2 - Home Assistant Monitor ===");
   
-  // Configurazione modalità WiFi: Station Mode (si connette a una rete)
+  // WiFi mode configuration: Station Mode (connects to a network)
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   
-  // Tentativo di connessione con timeout
-  Serial.print("Connessione a WiFi");
+  // Connection attempt with timeout
+  Serial.print("Connecting to WiFi");
   int attempts = 0;
-  const int MAX_ATTEMPTS = 30;  // Massimo 15 secondi (30 * 500ms)
+  const int MAX_ATTEMPTS = 30;  // Maximum 15 seconds (30 * 500ms)
   
   while (WiFi.status() != WL_CONNECTED && attempts < MAX_ATTEMPTS) {
     delay(500);
@@ -52,80 +52,80 @@ void setup() {
     attempts++;
   }
   
-  // Verifica esito connessione
+  // Check connection result
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWiFi connesso!");
+    Serial.println("\nWiFi connected!");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println("\nErrore connessione WiFi!");
-    // In caso di errore, il loop() tenterà la riconnessione
+    Serial.println("\nWiFi connection error!");
+    // In case of error, loop() will attempt reconnection
     return;
   }
   
-  // Configurazione HTTPS se necessario
+  // HTTPS configuration if necessary
   String baseUrl = String(HA_BASE_URL);
   if (baseUrl.startsWith("https://")) {
     useHTTPS = true;
-    Serial.println("Configurazione HTTPS...");
+    Serial.println("Configuring HTTPS...");
     
-    // Per sviluppo: disabilita verifica certificato (NON usare in produzione!)
-    // In produzione, dovresti caricare il certificato del server
-    clientSecure.setInsecure();  // Disabilita verifica certificato SSL
+    // For development: disable certificate verification (DO NOT use in production!)
+    // In production, you should load the server certificate
+    clientSecure.setInsecure();  // Disable SSL certificate verification
     
-    // Alternativa per produzione (richiede certificato):
-    // clientSecure.setCACert(certificate);  // Carica il certificato CA
+    // Alternative for production (requires certificate):
+    // clientSecure.setCACert(certificate);  // Load CA certificate
     
-    Serial.println("HTTPS configurato (verifica certificato disabilitata)");
+    Serial.println("HTTPS configured (certificate verification disabled)");
   } else {
     useHTTPS = false;
-    Serial.println("Usando HTTP");
+    Serial.println("Using HTTP");
   }
   
-  delay(1000);  // Pausa prima di iniziare le letture
+  delay(1000);  // Pause before starting readings
 }
 
 /**
- * Loop principale: eseguito continuamente dopo setup()
- * Legge periodicamente i sensori configurati da Home Assistant
+ * Main loop: executed continuously after setup()
+ * Periodically reads configured sensors from Home Assistant
  */
 void loop() {
-  // Verifica connessione WiFi e riconnessione automatica se necessario
+  // Check WiFi connection and automatic reconnection if necessary
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi disconnesso, riconnessione...");
+    Serial.println("WiFi disconnected, reconnecting...");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    delay(5000);  // Attesa prima di riprovare
-    return;  // Esce dal loop e riprova al prossimo ciclo
+    delay(5000);  // Wait before retrying
+    return;  // Exit loop and retry on next cycle
   }
   
-  // Lettura di tutti i sensori configurati
-  Serial.println("\n--- Lettura sensori Home Assistant ---");
+  // Read all configured sensors
+  Serial.println("\n--- Reading Home Assistant sensors ---");
   
   for (int i = 0; i < NUM_SENSORS; i++) {
     readSensor(sensorConfigs[i]);
-    delay(500);  // Pausa tra le richieste per evitare sovraccarico server
+    delay(500);  // Pause between requests to avoid server overload
   }
   
-  Serial.println("--- Fine lettura sensori ---\n");
+  Serial.println("--- End of sensor reading ---\n");
   
-  // Attesa prima della prossima lettura (intervallo configurabile)
+  // Wait before next reading (configurable interval)
   delay(READ_INTERVAL * 1000);
 }
 
 /**
- * Legge lo stato di un sensore da Home Assistant tramite REST API
+ * Reads the state of a sensor from Home Assistant via REST API
  * 
- * @param sensor Configurazione del sensore (label ed entity ID)
+ * @param sensor Sensor configuration (label and entity ID)
  * 
- * Utilizza l'endpoint /api/states/{entity_id} di Home Assistant
- * per ottenere lo stato corrente del sensore specificato.
+ * Uses the /api/states/{entity_id} endpoint of Home Assistant
+ * to get the current state of the specified sensor.
  */
 void readSensor(SensorConfig sensor) {
-  // Costruzione URL API Home Assistant
-  // Formato: http://host:port/api/states/{entity_id} oppure https://host/api/states/{entity_id}
+  // Build Home Assistant API URL
+  // Format: http://host:port/api/states/{entity_id} or https://host/api/states/{entity_id}
   String url = String(HA_BASE_URL);
   
-  // Assicurati che l'URL non abbia trailing slash
+  // Ensure URL doesn't have trailing slash
   if (url.endsWith("/")) {
     url.remove(url.length() - 1);
   }
@@ -133,117 +133,117 @@ void readSensor(SensorConfig sensor) {
   url += "/api/states/";
   url += String(sensor.entityId);
   
-  // Debug: stampa URL (commenta in produzione se contiene informazioni sensibili)
+  // Debug: print URL (comment in production if it contains sensitive information)
   Serial.print("URL: ");
   Serial.println(url);
   
-  // Inizializzazione richiesta HTTP/HTTPS
+  // Initialize HTTP/HTTPS request
   if (useHTTPS) {
     http.begin(clientSecure, url);
   } else {
     http.begin(client, url);
   }
   
-  // Configurazione timeout
-  http.setTimeout(10000);  // 10 secondi
+  // Timeout configuration
+  http.setTimeout(10000);  // 10 seconds
   
-  // Aggiunta header di autenticazione (Long-Lived Access Token)
+  // Add authentication header (Long-Lived Access Token)
   http.addHeader("Authorization", "Bearer " + String(HA_ACCESS_TOKEN));
   http.addHeader("Content-Type", "application/json");
   
-  // Debug: verifica header
+  // Debug: verify header
   Serial.print("Header Authorization: Bearer ");
-  Serial.println(String(HA_ACCESS_TOKEN).substring(0, 20) + "...");  // Mostra solo primi 20 caratteri
+  Serial.println(String(HA_ACCESS_TOKEN).substring(0, 20) + "...");  // Show only first 20 characters
   
-  // Esecuzione richiesta GET
+  // Execute GET request
   int httpCode = http.GET();
   
-  // Gestione risposta HTTP
+  // Handle HTTP response
   if (httpCode > 0) {
-    // Richiesta completata (codice positivo = successo o errore HTTP)
+    // Request completed (positive code = success or HTTP error)
     if (httpCode == HTTP_CODE_OK) {
-      // Richiesta riuscita (200 OK)
+      // Request successful (200 OK)
       String payload = http.getString();
       
-      // Debug: mostra payload (commenta se troppo lungo)
+      // Debug: show payload (comment if too long)
       // Serial.print("Payload: ");
       // Serial.println(payload);
       
-      // Parsing della risposta JSON
-      // Buffer di 1024 byte per il documento JSON (adattare se necessario)
+      // Parse JSON response
+      // 1024 byte buffer for JSON document (adjust if necessary)
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, payload);
       
       if (!error) {
-        // Parsing riuscito: estrazione dati
-        const char* state = doc["state"];  // Valore dello stato
-        const char* unit = doc["attributes"]["unit_of_measurement"];  // Unità di misura (opzionale)
+        // Parsing successful: extract data
+        const char* state = doc["state"];  // State value
+        const char* unit = doc["attributes"]["unit_of_measurement"];  // Unit of measurement (optional)
         
-        // Stampa formattata: Label: valore [unità]
+        // Formatted output: Label: value [unit]
         Serial.print(sensor.label);
         Serial.print(": ");
         Serial.print(state);
         
-        // Aggiunta unità di misura se presente
+        // Add unit of measurement if present
         if (unit) {
           Serial.print(" ");
           Serial.print(unit);
         }
         Serial.println();
       } else {
-        // Errore durante il parsing JSON
+        // Error during JSON parsing
         Serial.print(sensor.label);
-        Serial.print(": Errore parsing JSON - ");
+        Serial.print(": JSON parsing error - ");
         Serial.println(error.c_str());
-        Serial.print("Payload ricevuto: ");
+        Serial.print("Received payload: ");
         Serial.println(payload);
       }
     } else {
-      // Errore HTTP (es. 400 Bad Request, 404 Not Found, 401 Unauthorized, ecc.)
-      String payload = http.getString();  // Leggi il payload anche in caso di errore
+      // HTTP error (e.g. 400 Bad Request, 404 Not Found, 401 Unauthorized, etc.)
+      String payload = http.getString();  // Read payload even on error
       
       Serial.print(sensor.label);
-      Serial.print(": Errore HTTP ");
+      Serial.print(": HTTP error ");
       Serial.println(httpCode);
       
-      // Stampa dettagli errore se disponibili
+      // Print error details if available
       if (payload.length() > 0) {
-        Serial.print("Dettagli errore: ");
+        Serial.print("Error details: ");
         Serial.println(payload);
       }
       
-      // Messaggi di aiuto per errori comuni
+      // Help messages for common errors
       if (httpCode == 400) {
-        Serial.println("  Suggerimento: Verifica che l'entity ID sia corretto");
-        Serial.println("  e che l'URL sia formattato correttamente");
+        Serial.println("  Hint: Verify that the entity ID is correct");
+        Serial.println("  and that the URL is properly formatted");
       } else if (httpCode == 401) {
-        Serial.println("  Suggerimento: Verifica che il token di accesso sia valido");
+        Serial.println("  Hint: Verify that the access token is valid");
       } else if (httpCode == 404) {
-        Serial.print("  Suggerimento: Entity ID '");
+        Serial.print("  Hint: Entity ID '");
         Serial.print(sensor.entityId);
-        Serial.println("' non trovato in Home Assistant");
+        Serial.println("' not found in Home Assistant");
       }
     }
   } else {
-    // Errore di connessione (codice negativo)
-    // Possibili cause: timeout, DNS non risolto, server non raggiungibile
+    // Connection error (negative code)
+    // Possible causes: timeout, DNS not resolved, server unreachable
     Serial.print(sensor.label);
-    Serial.print(": Errore connessione (codice: ");
+    Serial.print(": Connection error (code: ");
     Serial.print(httpCode);
     Serial.println(")");
     
-    // Messaggi di aiuto per errori comuni
+    // Help messages for common errors
     if (httpCode == HTTPC_ERROR_CONNECTION_REFUSED) {
-      Serial.println("  Server non raggiungibile o porta errata");
+      Serial.println("  Server unreachable or wrong port");
     } else if (httpCode == HTTPC_ERROR_CONNECTION_LOST) {
-      Serial.println("  Connessione persa durante la richiesta");
+      Serial.println("  Connection lost during request");
     } else if (httpCode == HTTPC_ERROR_SEND_PAYLOAD_FAILED) {
-      Serial.println("  Errore durante l'invio della richiesta");
+      Serial.println("  Error sending request");
     } else if (httpCode == HTTPC_ERROR_NO_STREAM) {
-      Serial.println("  Errore nello stream di risposta");
+      Serial.println("  Response stream error");
     }
   }
   
-  // Chiusura connessione HTTP
+  // Close HTTP connection
   http.end();
 }
