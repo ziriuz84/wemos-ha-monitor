@@ -1,0 +1,17 @@
+# File di build Arduino
+build/
+*.elf
+*.bin
+*.hex
+
+# File temporanei
+*.tmp
+*.bak
+*~
+
+# File IDE
+.vscode/
+.idea/
+
+# File di configurazione locale (non committare credenziali!)
+config.h  # Scommenta se vuoi escludere config.h dal repository
