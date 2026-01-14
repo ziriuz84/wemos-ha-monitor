@@ -1,150 +1,150 @@
 /**
- * File di configurazione per Wemos D1 R2 - Home Assistant Monitor
+ * Configuration file for Wemos D1 R2 - Home Assistant Monitor
  * 
- * Modificare i valori seguenti secondo la propria configurazione:
- * - Credenziali WiFi
- * - URL e token di Home Assistant
- * - Lista dei sensori da monitorare
+ * Edit the following values according to your configuration:
+ * - WiFi credentials
+ * - Home Assistant URL and token
+ * - List of sensors to monitor
  */
 
 #ifndef CONFIG_H
 #define CONFIG_H
 
 // ============================================
-// CONFIGURAZIONE WIFI
+// WIFI CONFIGURATION
 // ============================================
-// Nome della rete WiFi (SSID)
+// WiFi network name (SSID)
 #define WIFI_SSID "NegriPominiMesh"
 
-// Password della rete WiFi
+// WiFi network password
 #define WIFI_PASSWORD "ohqda14sisfxrqg"
 
 // ============================================
-// CONFIGURAZIONE HOME ASSISTANT
+// HOME ASSISTANT CONFIGURATION
 // ============================================
 /**
- * URL base di Home Assistant (senza trailing slash)
+ * Home Assistant base URL (without trailing slash)
  * 
- * IMPORTANTE: Se usi un dominio pubblico con reverse proxy,
- * assicurati che l'URL punti correttamente all'API di Home Assistant.
+ * IMPORTANT: If using a public domain with reverse proxy,
+ * ensure the URL correctly points to the Home Assistant API.
  * 
- * Esempi:
- * - HTTP locale: "http://192.168.1.100:8123"
- * - HTTPS locale: "https://192.168.1.100:8123"
- * - Hostname locale: "http://homeassistant.local:8123"
- * - Dominio pubblico (porta standard 443): "https://homeassistant.example.com"
- * - Dominio pubblico (porta custom): "https://homeassistant.example.com:8123"
+ * Examples:
+ * - Local HTTP: "http://192.168.1.100:8123"
+ * - Local HTTPS: "https://192.168.1.100:8123"
+ * - Local hostname: "http://homeassistant.local:8123"
+ * - Public domain (standard port 443): "https://homeassistant.example.com"
+ * - Public domain (custom port): "https://homeassistant.example.com:8123"
  * 
- * Nota: Per HTTPS potrebbe essere necessario configurare
- *       i certificati SSL (vedi WiFiClientSecure nel codice)
+ * Note: For HTTPS you may need to configure
+ *       SSL certificates (see WiFiClientSecure in code)
  * 
- * Nota: Se ricevi errori 400, verifica che:
- *       1. L'URL sia corretto e raggiungibile
- *       2. La porta sia specificata se diversa da 80/443
- *       3. Il reverse proxy (se presente) permetta l'accesso all'API
+ * Note: If you receive 400 errors, verify that:
+ *       1. The URL is correct and reachable
+ *       2. The port is specified if different from 80/443
+ *       3. The reverse proxy (if present) allows API access
  */
 #define HA_BASE_URL "https://asdrubale.sirionegri.it"
 
 /**
- * Long-Lived Access Token di Home Assistant
+ * Home Assistant Long-Lived Access Token
  * 
- * Come generare:
- * 1. Apri Home Assistant nel browser
- * 2. Clicca sul tuo profilo utente (in basso a sinistra)
- * 3. Scorri fino alla sezione "Access Token"
- * 4. Clicca su "Crea Token"
- * 5. Assegna un nome descrittivo (es. "Wemos Monitor")
- * 6. Copia il token generato e incollalo qui sotto
+ * How to generate:
+ * 1. Open Home Assistant in browser
+ * 2. Click on your user profile (bottom left)
+ * 3. Scroll to "Access Token" section
+ * 4. Click "Create Token"
+ * 5. Assign a descriptive name (e.g. "Wemos Monitor")
+ * 6. Copy the generated token and paste it below
  * 
- * IMPORTANTE: Non condividere mai questo token!
+ * IMPORTANT: Never share this token!
  */
 #define HA_ACCESS_TOKEN "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhYjQxNWIxOTkwYmU0ZDQ1YTllOGVhMTNkOTY4N2UwNCIsImlhdCI6MTc2ODQzMDk0OCwiZXhwIjoyMDgzNzkwOTQ4fQ.TNd6R9yP4Sr5CKuUF0Xq7wxWsSVbEhdbRmQn5hyNmvY"
 
 /**
- * Intervallo di lettura sensori (in secondi)
+ * Sensor reading interval (in seconds)
  * 
- * Determina quanto tempo attendere tra una lettura completa
- * di tutti i sensori e la successiva.
+ * Determines how long to wait between one complete reading
+ * of all sensors and the next.
  * 
- * Valori consigliati:
- * - 30-60 secondi per sensori che cambiano lentamente (temperatura, umidità)
- * - 10-30 secondi per sensori più dinamici
- * - Evitare valori troppo bassi (< 5s) per non sovraccaricare il server
+ * Recommended values:
+ * - 30-60 seconds for slowly changing sensors (temperature, humidity)
+ * - 10-30 seconds for more dynamic sensors
+ * - Avoid values too low (< 5s) to avoid overloading the server
  */
 #define READ_INTERVAL 30
 
 // ============================================
-// CONFIGURAZIONE SENSORI
+// SENSOR CONFIGURATION
 // ============================================
 /**
- * Struttura dati per configurare un sensore
+ * Data structure to configure a sensor
  * 
- * @param label     Etichetta da mostrare sulla seriale (es. "Temperatura")
- * @param entityId  Entity ID completo del sensore in Home Assistant
- *                  (es. "sensor.temperatura_soggiorno")
+ * @param label     Label to display on serial (e.g. "Temperature")
+ * @param entityId  Complete entity ID of the sensor in Home Assistant
+ *                  (e.g. "sensor.temperature_living_room")
  */
 struct SensorConfig {
-  const char* label;      // Etichetta da mostrare sulla seriale
-  const char* entityId;   // Entity ID del sensore in Home Assistant
+  const char* label;      // Label to display on serial
+  const char* entityId;   // Entity ID of the sensor in Home Assistant
 };
 
 /**
- * Numero di sensori da monitorare
+ * Number of sensors to monitor
  * 
- * IMPORTANTE: Questo valore DEVE corrispondere al numero
- *             di elementi nell'array sensorConfigs[]
+ * IMPORTANT: This value MUST match the number
+ *            of elements in the sensorConfigs[] array
  */
 #define NUM_SENSORS 3
 
 /**
- * Array di configurazione sensori
+ * Sensor configuration array
  * 
- * Modificare questo array per aggiungere, rimuovere o modificare
- * i sensori da monitorare.
+ * Edit this array to add, remove or modify
+ * the sensors to monitor.
  * 
- * Formato: {"Label", "entity_id"}
+ * Format: {"Label", "entity_id"}
  * 
- * Esempi di entity ID:
- * - sensor.temperatura_soggiorno
- * - sensor.umidita_camera
- * - binary_sensor.movimento_ingresso
- * - climate.termostato
+ * Entity ID examples:
+ * - sensor.temperature_living_room
+ * - sensor.humidity_bedroom
+ * - binary_sensor.motion_entrance
+ * - climate.thermostat
  * 
- * Per trovare l'entity ID di un sensore:
- * 1. Vai su Impostazioni > Dispositivi e servizi
- * 2. Cerca il tuo sensore/dispositivo
- * 3. Clicca sul sensore per vedere i dettagli
- * 4. L'entity ID è visibile nei dettagli
+ * To find a sensor's entity ID:
+ * 1. Go to Settings > Devices & Services
+ * 2. Search for your sensor/device
+ * 3. Click on the sensor to see details
+ * 4. The entity ID is visible in the details
  */
 SensorConfig sensorConfigs[NUM_SENSORS] = {
   {"Grid", "sensor.foxess_grid_consumption_power"},
-  {"Solare", "sensor.solaredge_current_power"},
-  {"Carico", "sensor.foxess_load_power"}
+  {"Solar", "sensor.solaredge_current_power"},
+  {"Load", "sensor.foxess_load_power"}
 };
 
 // ============================================
-// ESEMPI DI ENTITY ID COMUNI
+// COMMON ENTITY ID EXAMPLES
 // ============================================
-// Sostituire gli esempi nell'array sopra con questi formati:
+// Replace examples in the array above with these formats:
 //
-// Sensori:
-//   sensor.temperatura_soggiorno
-//   sensor.umidita_soggiorno
-//   sensor.pressione_atmosferica
-//   sensor.consumo_energia
-//   sensor.luminosita
-//   sensor.qualita_aria
+// Sensors:
+//   sensor.temperature_living_room
+//   sensor.humidity_living_room
+//   sensor.atmospheric_pressure
+//   sensor.energy_consumption
+//   sensor.brightness
+//   sensor.air_quality
 //
-// Binary Sensors (sensori on/off):
-//   binary_sensor.movimento_soggiorno
-//   binary_sensor.porta_ingresso
-//   binary_sensor.fumo_rilevato
+// Binary Sensors (on/off sensors):
+//   binary_sensor.motion_living_room
+//   binary_sensor.door_entrance
+//   binary_sensor.smoke_detected
 //
-// Dispositivi:
-//   climate.termostato
-//   light.luce_soggiorno
-//   switch.interruttore
-//   cover.tapparella_camera
+// Devices:
+//   climate.thermostat
+//   light.living_room_light
+//   switch.switch
+//   cover.bedroom_blind
 // ============================================
 
 #endif // CONFIG_H
