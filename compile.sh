@@ -1,29 +1,29 @@
 #!/bin/bash
 
 ###############################################################################
-# Script di compilazione per Wemos D1 R2 - Home Assistant Monitor
+# Compilation script for Wemos D1 R2 - Home Assistant Monitor
 #
-# Compila lo sketch senza caricarlo sul dispositivo
+# Compiles the sketch without uploading to device
 #
-# Uso: ./compile.sh
+# Usage: ./compile.sh
 ###############################################################################
 
-# Colori per output
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configurazione
+# Configuration
 SKETCH_NAME="wemos_ha_monitor"
 SKETCH_DIR="$(dirname "$(readlink -f "$0")")"
 BOARD_FQBN="esp8266:esp8266:d1_mini"
 ARDUINO_CLI="arduino-cli"
 
-# Funzioni di utilità
+# Utility functions
 error_exit() {
-    echo -e "${RED}❌ Errore: $1${NC}" >&2
+    echo -e "${RED}❌ Error: $1${NC}" >&2
     exit 1
 }
 
@@ -35,17 +35,17 @@ info_msg() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# Verifica arduino-cli
+# Check arduino-cli
 if ! command -v "$ARDUINO_CLI" &> /dev/null; then
-    error_exit "arduino-cli non trovato!"
+    error_exit "arduino-cli not found!"
 fi
 
-# Verifica che lo sketch esista
+# Verify sketch exists
 if [ ! -f "$SKETCH_DIR/$SKETCH_NAME.ino" ]; then
-    error_exit "Sketch non trovato: $SKETCH_DIR/$SKETCH_NAME.ino"
+    error_exit "Sketch not found: $SKETCH_DIR/$SKETCH_NAME.ino"
 fi
 
-info_msg "Compilazione sketch..."
+info_msg "Compiling sketch..."
 
 "$ARDUINO_CLI" compile \
     --fqbn "$BOARD_FQBN" \
@@ -53,7 +53,7 @@ info_msg "Compilazione sketch..."
     "$SKETCH_DIR"
 
 if [ $? -eq 0 ]; then
-    success_msg "Compilazione completata con successo"
+    success_msg "Compilation completed successfully"
 else
-    error_exit "Errore durante la compilazione"
+    error_exit "Error during compilation"
 fi

@@ -1,104 +1,104 @@
 #!/bin/bash
 
 ###############################################################################
-# Script di compilazione e caricamento per Wemos D1 R2 - Home Assistant Monitor
+# Compilation and upload script for Wemos D1 R2 - Home Assistant Monitor
 #
-# Questo script:
-# 1. Verifica l'installazione di arduino-cli
-# 2. Configura la board Wemos D1 R2
-# 3. Installa le librerie necessarie
-# 4. Compila lo sketch
-# 5. Carica lo sketch sul dispositivo
+# This script:
+# 1. Verifies arduino-cli installation
+# 2. Configures Wemos D1 R2 board
+# 3. Installs required libraries
+# 4. Compiles the sketch
+# 5. Uploads the sketch to the device
 #
-# Uso: ./upload.sh [porta_seriale]
-# Esempio: ./upload.sh /dev/ttyUSB0
+# Usage: ./upload.sh [serial_port]
+# Example: ./upload.sh /dev/ttyUSB0
 ###############################################################################
 
-# Colori per output
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configurazione
+# Configuration
 SKETCH_NAME="wemos_ha_monitor"
 SKETCH_DIR="$(dirname "$(readlink -f "$0")")"
-BOARD_FQBN="esp8266:esp8266:d1_mini"  # Wemos D1 R2 usa il core d1_mini
+BOARD_FQBN="esp8266:esp8266:d1_mini"  # Wemos D1 R2 uses d1_mini core
 ARDUINO_CLI="arduino-cli"
 
-# Porta seriale (può essere passata come argomento o auto-rilevata)
+# Serial port (can be passed as argument or auto-detected)
 SERIAL_PORT="${1:-}"
 
 ###############################################################################
-# Funzioni di utilità
+# Utility functions
 ###############################################################################
 
-# Stampa messaggio di errore e termina
+# Print error message and exit
 error_exit() {
-    echo -e "${RED}❌ Errore: $1${NC}" >&2
+    echo -e "${RED}❌ Error: $1${NC}" >&2
     exit 1
 }
 
-# Stampa messaggio di successo
+# Print success message
 success_msg() {
     echo -e "${GREEN}✅ $1${NC}"
 }
 
-# Stampa messaggio informativo
+# Print info message
 info_msg() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
 
-# Stampa messaggio di avviso
+# Print warning message
 warning_msg() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
 ###############################################################################
-# Verifica prerequisiti
+# Prerequisites check
 ###############################################################################
 
 check_arduino_cli() {
-    info_msg "Verifica installazione arduino-cli..."
+    info_msg "Checking arduino-cli installation..."
     
     if ! command -v "$ARDUINO_CLI" &> /dev/null; then
-        error_exit "arduino-cli non trovato!\n\n" \
-                   "Installa arduino-cli:\n" \
+        error_exit "arduino-cli not found!\n\n" \
+                   "Install arduino-cli:\n" \
                    "  curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh\n" \
-                   "  oppure: sudo pacman -S arduino-cli (su Arch Linux)"
+                   "  or: sudo pacman -S arduino-cli (on Arch Linux)"
     fi
     
-    success_msg "arduino-cli trovato: $($ARDUINO_CLI version | head -n1)"
+    success_msg "arduino-cli found: $($ARDUINO_CLI version | head -n1)"
 }
 
 ###############################################################################
-# Configurazione board e librerie
+# Board and library configuration
 ###############################################################################
 
 setup_board() {
-    info_msg "Configurazione board Wemos D1 R2..."
+    info_msg "Configuring Wemos D1 R2 board..."
     
-    # Aggiungi index per ESP8266 se non presente
+    # Add ESP8266 index if not present
     if ! "$ARDUINO_CLI" core list | grep -q "esp8266:esp8266"; then
-        info_msg "Aggiunta board index ESP8266..."
+        info_msg "Adding ESP8266 board index..."
         "$ARDUINO_CLI" core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
         "$ARDUINO_CLI" core install esp8266:esp8266
     fi
     
-    # Verifica che la board sia installata
+    # Verify board is installed
     if ! "$ARDUINO_CLI" core list | grep -q "esp8266:esp8266"; then
-        error_exit "Board ESP8266 non installata correttamente"
+        error_exit "ESP8266 board not installed correctly"
     fi
     
-    success_msg "Board ESP8266 configurata"
+    success_msg "ESP8266 board configured"
 }
 
 install_libraries() {
-    info_msg "Verifica librerie necessarie..."
+    info_msg "Checking required libraries..."
     
-    # Lista delle librerie richieste (già incluse con ESP8266 core)
-    # ArduinoJson deve essere installata separatamente
+    # List of required libraries (already included with ESP8266 core)
+    # ArduinoJson must be installed separately
     local libraries=("ArduinoJson@6.21.3")
     
     for lib in "${libraries[@]}"; do
@@ -106,9 +106,9 @@ install_libraries() {
         lib_version=$(echo "$lib" | cut -d'@' -f2)
         
         if "$ARDUINO_CLI" lib list | grep -q "^$lib_name"; then
-            info_msg "Libreria $lib_name già installata"
+            info_msg "Library $lib_name already installed"
         else
-            info_msg "Installazione libreria $lib_name..."
+            info_msg "Installing library $lib_name..."
             if [ -n "$lib_version" ]; then
                 "$ARDUINO_CLI" lib install "$lib_name@$lib_version"
             else
@@ -116,33 +116,33 @@ install_libraries() {
             fi
             
             if [ $? -eq 0 ]; then
-                success_msg "Libreria $lib_name installata"
+                success_msg "Library $lib_name installed"
             else
-                error_exit "Errore durante l'installazione di $lib_name"
+                error_exit "Error installing $lib_name"
             fi
         fi
     done
 }
 
 ###############################################################################
-# Rilevamento porta seriale
+# Serial port detection
 ###############################################################################
 
 detect_serial_port() {
-    info_msg "Rilevamento porta seriale..."
+    info_msg "Detecting serial port..."
     
-    # Se la porta è stata passata come argomento, usala
+    # If port was passed as argument, use it
     if [ -n "$SERIAL_PORT" ]; then
         if [ -e "$SERIAL_PORT" ]; then
-            success_msg "Porta seriale: $SERIAL_PORT"
+            success_msg "Serial port: $SERIAL_PORT"
             return 0
         else
-            error_exit "Porta seriale $SERIAL_PORT non trovata"
+            error_exit "Serial port $SERIAL_PORT not found"
         fi
     fi
     
-    # Auto-rilevamento porta seriale
-    # Cerca porte USB comuni su Linux
+    # Auto-detect serial port
+    # Search common USB ports on Linux
     local ports=(
         "/dev/ttyUSB0"
         "/dev/ttyUSB1"
@@ -152,36 +152,36 @@ detect_serial_port() {
     )
     
     for port_pattern in "${ports[@]}"; do
-        # Espandi il pattern (per gestire wildcard)
+        # Expand pattern (to handle wildcards)
         for port in $port_pattern; do
             if [ -e "$port" ]; then
                 SERIAL_PORT="$port"
-                success_msg "Porta seriale rilevata: $SERIAL_PORT"
+                success_msg "Serial port detected: $SERIAL_PORT"
                 return 0
             fi
         done
     done
     
-    # Se non trovata, chiedi all'utente
-    warning_msg "Nessuna porta seriale rilevata automaticamente"
-    echo "Porte seriali disponibili:"
-    ls -1 /dev/tty{USB,ACM}* 2>/dev/null || echo "  (nessuna trovata)"
+    # If not found, ask user
+    warning_msg "No serial port automatically detected"
+    echo "Available serial ports:"
+    ls -1 /dev/tty{USB,ACM}* 2>/dev/null || echo "  (none found)"
     echo ""
-    read -p "Inserisci la porta seriale (es. /dev/ttyUSB0): " SERIAL_PORT
+    read -p "Enter serial port (e.g. /dev/ttyUSB0): " SERIAL_PORT
     
     if [ -z "$SERIAL_PORT" ] || [ ! -e "$SERIAL_PORT" ]; then
-        error_exit "Porta seriale non valida: $SERIAL_PORT"
+        error_exit "Invalid serial port: $SERIAL_PORT"
     fi
     
-    success_msg "Porta seriale: $SERIAL_PORT"
+    success_msg "Serial port: $SERIAL_PORT"
 }
 
 ###############################################################################
-# Compilazione e caricamento
+# Compilation and upload
 ###############################################################################
 
 compile_sketch() {
-    info_msg "Compilazione sketch..."
+    info_msg "Compiling sketch..."
     
     "$ARDUINO_CLI" compile \
         --fqbn "$BOARD_FQBN" \
@@ -189,23 +189,23 @@ compile_sketch() {
         "$SKETCH_DIR"
     
     if [ $? -eq 0 ]; then
-        success_msg "Compilazione completata con successo"
+        success_msg "Compilation completed successfully"
     else
-        error_exit "Errore durante la compilazione"
+        error_exit "Error during compilation"
     fi
 }
 
 upload_sketch() {
-    info_msg "Caricamento sketch su $SERIAL_PORT..."
+    info_msg "Uploading sketch to $SERIAL_PORT..."
     
-    # Verifica che la porta sia ancora disponibile
+    # Verify port is still available
     if [ ! -e "$SERIAL_PORT" ]; then
-        error_exit "Porta seriale $SERIAL_PORT non più disponibile"
+        error_exit "Serial port $SERIAL_PORT no longer available"
     fi
     
-    # Avviso per modalità bootloader se necessario
-    warning_msg "Assicurati che il Wemos D1 R2 sia in modalità upload"
-    warning_msg "(tieni premuto il pulsante BOOT durante il caricamento se necessario)"
+    # Warning for bootloader mode if necessary
+    warning_msg "Make sure Wemos D1 R2 is in upload mode"
+    warning_msg "(hold BOOT button during upload if necessary)"
     sleep 2
     
     "$ARDUINO_CLI" upload \
@@ -215,31 +215,31 @@ upload_sketch() {
         "$SKETCH_DIR"
     
     if [ $? -eq 0 ]; then
-        success_msg "Caricamento completato con successo!"
-        info_msg "Apri il monitor seriale per vedere l'output (115200 baud)"
+        success_msg "Upload completed successfully!"
+        info_msg "Open serial monitor to see output (115200 baud)"
     else
-        error_exit "Errore durante il caricamento"
+        error_exit "Error during upload"
     fi
 }
 
 ###############################################################################
-# Funzione principale
+# Main function
 ###############################################################################
 
 main() {
     echo -e "${BLUE}"
     echo "╔════════════════════════════════════════════════════════════╗"
     echo "║  Wemos D1 R2 - Home Assistant Monitor                     ║"
-    echo "║  Script di compilazione e caricamento                     ║"
+    echo "║  Compilation and upload script                            ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
-    # Verifica che lo sketch esista
+    # Verify sketch exists
     if [ ! -f "$SKETCH_DIR/$SKETCH_NAME.ino" ]; then
-        error_exit "Sketch non trovato: $SKETCH_DIR/$SKETCH_NAME.ino"
+        error_exit "Sketch not found: $SKETCH_DIR/$SKETCH_NAME.ino"
     fi
     
-    # Esegui i passaggi
+    # Execute steps
     check_arduino_cli
     setup_board
     install_libraries
@@ -248,16 +248,16 @@ main() {
     upload_sketch
     
     echo ""
-    success_msg "Tutto completato con successo!"
+    success_msg "All completed successfully!"
     echo ""
-    info_msg "Per aprire il monitor seriale:"
+    info_msg "To open serial monitor:"
     echo "  arduino-cli monitor -p $SERIAL_PORT -c baudrate=115200"
     echo ""
 }
 
 ###############################################################################
-# Esecuzione
+# Execution
 ###############################################################################
 
-# Esegui la funzione principale
+# Execute main function
 main
