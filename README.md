@@ -1,134 +1,134 @@
 # Wemos D1 R2 - Home Assistant Monitor
 
-Sketch Arduino per monitorare sensori Home Assistant tramite seriale.
+Arduino sketch to monitor Home Assistant sensors via serial output.
 
-## Requisiti
+## Requirements
 
 ### Hardware
 - Wemos D1 R2 (ESP8266)
 
 ### Software
-- **arduino-cli** (strumento da linea di comando per Arduino)
-  - Installazione su Arch Linux: `sudo pacman -S arduino-cli`
-  - Installazione su altre distribuzioni: [arduino-cli install guide](https://arduino.github.io/arduino-cli/latest/installation/)
+- **arduino-cli** (command-line tool for Arduino)
+  - Installation on Arch Linux: `sudo pacman -S arduino-cli`
+  - Installation on other distributions: [arduino-cli install guide](https://arduino.github.io/arduino-cli/latest/installation/)
 
-### Librerie Arduino
-Le librerie vengono installate automaticamente dagli script. Manualmente:
-- **ESP8266WiFi** (inclusa con ESP8266 Board Support)
-- **ESP8266HTTPClient** (inclusa con ESP8266 Board Support)
-- **ArduinoJson** (versione 6.x) - di Benoit Blanchon
+### Arduino Libraries
+Libraries are automatically installed by the scripts. Manual installation:
+- **ESP8266WiFi** (included with ESP8266 Board Support)
+- **ESP8266HTTPClient** (included with ESP8266 Board Support)
+- **ArduinoJson** (version 6.x) - by Benoit Blanchon
 
-## Configurazione
+## Configuration
 
-### 1. Configurazione WiFi
-Modifica in `config.h`:
+### 1. WiFi Configuration
+Edit `config.h`:
 ```cpp
-#define WIFI_SSID "nome_rete_wifi"
-#define WIFI_PASSWORD "password_wifi"
+#define WIFI_SSID "your_wifi_network_name"
+#define WIFI_PASSWORD "your_wifi_password"
 ```
 
-### 2. Configurazione Home Assistant
-Modifica in `config.h`:
+### 2. Home Assistant Configuration
+Edit `config.h`:
 ```cpp
 #define HA_BASE_URL "http://192.168.1.100:8123"
-#define HA_ACCESS_TOKEN "il_tuo_long_lived_access_token"
+#define HA_ACCESS_TOKEN "your_long_lived_access_token"
 ```
 
-**Come ottenere il Long-Lived Access Token:**
-1. Apri Home Assistant
-2. Vai su **Profilo Utente** (in basso a sinistra)
-3. Scorri fino a **Access Token**
-4. Clicca su **Crea Token**
-5. Copia il token generato e incollalo in `config.h`
+**How to get the Long-Lived Access Token:**
+1. Open Home Assistant
+2. Go to **User Profile** (bottom left)
+3. Scroll to **Access Token**
+4. Click **Create Token**
+5. Copy the generated token and paste it in `config.h`
 
-### 3. Configurazione Sensori
-Modifica l'array `sensorConfigs` in `config.h`:
+### 3. Sensor Configuration
+Edit the `sensorConfigs` array in `config.h`:
 
 ```cpp
-#define NUM_SENSORS 3  // Aggiorna il numero di sensori
+#define NUM_SENSORS 3  // Update the number of sensors
 
 SensorConfig sensorConfigs[NUM_SENSORS] = {
-  {"Temperatura", "sensor.temperatura_soggiorno"},
-  {"Umidità", "sensor.umidita_soggiorno"},
-  {"Pressione", "sensor.pressione_atmosferica"}
+  {"Temperature", "sensor.temperature_living_room"},
+  {"Humidity", "sensor.humidity_living_room"},
+  {"Pressure", "sensor.atmospheric_pressure"}
 };
 ```
 
-**Formato:**
-- Primo parametro: etichetta da mostrare sulla seriale
-- Secondo parametro: Entity ID del sensore in Home Assistant
+**Format:**
+- First parameter: label to display on serial
+- Second parameter: Entity ID of the sensor in Home Assistant
 
-**Come trovare l'Entity ID:**
-1. Vai su **Impostazioni** > **Dispositivi e servizi**
-2. Cerca il tuo sensore
-3. L'Entity ID è visibile nei dettagli del sensore
+**How to find the Entity ID:**
+1. Go to **Settings** > **Devices & Services**
+2. Search for your sensor
+3. The Entity ID is visible in the sensor details
 
-### 4. Intervallo di lettura
-Modifica in `config.h`:
+### 4. Reading Interval
+Edit in `config.h`:
 ```cpp
-#define READ_INTERVAL 30  // secondi tra una lettura e l'altra
+#define READ_INTERVAL 30  // seconds between readings
 ```
 
-## Compilazione e Upload
+## Compilation and Upload
 
-### Metodo 1: Script automatico (consigliato)
+### Method 1: Automatic Script (Recommended)
 
-Lo script `upload.sh` gestisce automaticamente:
-- Verifica installazione arduino-cli
-- Configurazione board ESP8266
-- Installazione librerie necessarie
-- Compilazione dello sketch
-- Caricamento sul dispositivo
+The `upload.sh` script automatically handles:
+- arduino-cli installation verification
+- ESP8266 board configuration
+- Required library installation
+- Sketch compilation
+- Device upload
 
-**Uso:**
+**Usage:**
 ```bash
-# Auto-rilevamento porta seriale
+# Auto-detect serial port
 ./upload.sh
 
-# Specifica porta seriale manualmente
+# Specify serial port manually
 ./upload.sh /dev/ttyUSB0
 ```
 
-**Solo compilazione (senza upload):**
+**Compilation only (no upload):**
 ```bash
 ./compile.sh
 ```
 
-### Metodo 2: Arduino IDE
+### Method 2: Arduino IDE
 
-1. Seleziona la scheda: **Tools** > **Board** > **LOLIN(WEMOS) D1 R2 & mini**
-2. Seleziona la porta seriale corretta
-3. Carica lo sketch
+1. Select board: **Tools** > **Board** > **LOLIN(WEMOS) D1 R2 & mini**
+2. Select the correct serial port
+3. Upload the sketch
 
-### Monitor seriale
+### Serial Monitor
 
-Per vedere l'output dello sketch:
+To see the sketch output:
 ```bash
 arduino-cli monitor -p /dev/ttyUSB0 -c baudrate=115200
 ```
 
-Oppure usa il monitor seriale dell'IDE Arduino (115200 baud).
+Or use the Arduino IDE serial monitor (115200 baud).
 
-## Output Serial
+## Serial Output
 
-Lo sketch stampa sulla seriale (115200 baud) i valori dei sensori:
+The sketch prints sensor values to serial (115200 baud):
 
 ```
 === Wemos D1 R2 - Home Assistant Monitor ===
-Connessione a WiFi...
-WiFi connesso!
+Connecting to WiFi...
+WiFi connected!
 IP address: 192.168.1.50
 
---- Lettura sensori Home Assistant ---
-Temperatura: 22.5 °C
-Umidità: 45.0 %
-Pressione: 1013.25 hPa
---- Fine lettura sensori ---
+--- Reading Home Assistant sensors ---
+Temperature: 22.5 °C
+Humidity: 45.0 %
+Pressure: 1013.25 hPa
+--- End of sensor reading ---
 ```
 
-## Note
+## Notes
 
-- Lo sketch supporta sia HTTP che HTTPS (per HTTPS usa `WiFiClientSecure`)
-- Se usi HTTPS, potresti dover gestire i certificati SSL
-- L'intervallo di lettura è configurabile tramite `READ_INTERVAL`
-- Il dispositivo si riconnette automaticamente se il WiFi si disconnette
+- The sketch supports both HTTP and HTTPS (uses `WiFiClientSecure` for HTTPS)
+- If using HTTPS, you may need to handle SSL certificates
+- Reading interval is configurable via `READ_INTERVAL`
+- The device automatically reconnects if WiFi disconnects
